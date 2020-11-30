@@ -1,0 +1,201 @@
+How to make our images bootable?
+
+My image currently starts like this:
+00000000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+00000400  42 44 db e9 2e eb db e9  1d b1 01 00 00 06 00 03  |BD..............|
+00000410  25 c0 37 f7 00 00 02 00  00 00 08 00 00 07 00 00  |%.7.............|
+00000420  00 21 11 b7 05 6c 6f 6f  73 65 00 00 00 00 00 00  |.!...loose......|
+00000430  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000440  00 00 00 00 00 00 00 00  00 26 00 00 de 00 00 00  |.........&......|
+00000450  de 00 00 03 00 00 00 0a  00 00 00 05 00 00 00 00  |................|
+00000460  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+00000480  00 00 00 00 de 00 00 00  00 6f 00 00 00 00 00 00  |.........o......|
+00000490  00 00 00 00 de 00 00 6f  00 6f 00 00 00 00 00 00  |.......o.o......|
+000004a0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+00000600  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+
+At 0x400 seems to match MDB in libhfs/apple.h:
+typedef struct {
+  Integer	drSigWord;	/* volume signature (0x4244 for HFS) */
+  LongInt	drCrDate;	/* date and time of volume creation */
+  LongInt	drLsMod;	/* date and time of last modification */
+  Integer	drAtrb;		/* volume attributes */
+  UInteger	drNmFls;	/* number of files in root directory */
+  UInteger	drVBMSt;	/* first block of volume bit map (always 3) */
+  UInteger	drAllocPtr;	/* start of next allocation search */
+  UInteger	drNmAlBlks;	/* number of allocation blocks in volume */
+  ULongInt	drAlBlkSiz;	/* size (in bytes) of allocation blocks */
+  ULongInt	drClpSiz;	/* default clump size */
+  UInteger	drAlBlSt;	/* first allocation block in volume */
+  LongInt	drNxtCNID;	/* next unused catalog node ID (dir/file ID) */
+  UInteger	drFreeBks;	/* number of unused allocation blocks */
+  char		drVN[28];	/* volume name (1-27 chars) */
+  LongInt	drVolBkUp;	/* date and time of last backup */
+  Integer	drVSeqNum;	/* volume backup sequence number */
+  ULongInt	drWrCnt;	/* volume write count */
+  ULongInt	drXTClpSiz;	/* clump size for extents overflow file */
+  ULongInt	drCTClpSiz;	/* clump size for catalog file */
+  UInteger	drNmRtDirs;	/* number of directories in root directory */
+  ULongInt	drFilCnt;	/* number of files in volume */
+  ULongInt	drDirCnt;	/* number of directories in volume */
+  LongInt	drFndrInfo[8];	/* information used by the Finder */
+  UInteger	drEmbedSigWord;	/* type of embedded volume */
+  ExtDescriptor	drEmbedExtent;	/* location of embedded volume */
+  ULongInt	drXTFlSize;	/* size (in bytes) of extents overflow file */
+  ExtDataRec	drXTExtRec;	/* first extent record for extents file */
+  ULongInt	drCTFlSize;	/* size (in bytes) of catalog file */
+  ExtDataRec	drCTExtRec;	/* first extent record for catalog file */
+} MDB;
+
+What does Tucson look like?
+(it's a BIN/CUE rather than straight image, so be mindful of a 16-byte offset)
+- Same "BD" etc at 0x400
+- First block has much more interesting content:
+00000010  4c 4b 60 00 00 86 44 18  00 00 06 53 79 73 74 65  |LK`...D....Syste|
+00000020  6d 00 00 00 00 00 00 00  00 00 06 46 69 6e 64 65  |m..........Finde|
+00000030  72 00 00 00 00 00 00 00  00 00 07 4d 61 63 73 42  |r..........MacsB|
+00000040  75 67 00 00 00 00 00 00  00 00 0c 44 69 73 61 73  |ug.........Disas|
+00000050  73 65 6d 62 6c 65 72 00  00 00 0d 53 74 61 72 74  |sembler....Start|
+00000060  55 70 53 63 72 65 65 6e  00 00 06 46 69 6e 64 65  |UpScreen...Finde|
+00000070  72 00 00 00 00 00 00 00  00 00 09 43 6c 69 70 62  |r..........Clipb|
+00000080  6f 61 72 64 00 00 00 00  00 00 00 0a 00 14 00 00  |oard............|
+00000090  43 00 00 00 80 00 00 02  00 00 4a 78 02 8e 6b 46  |C.........Jx..kF|
+000000a0  20 78 02 ae 32 28 00 08  7c fe 54 46 30 3b 60 3c  | x..2(..|.TF0;`<|
+000000b0  67 58 b2 40 66 f4 0c 01  00 76 62 10 20 78 02 a6  |gX.@f....vb. x..|
+000000c0  d1 fa ff d4 a0 57 21 f8  02 a6 01 18 58 4f 2e 0f  |.....W!.....XO..|
+000000d0  61 38 32 3b 60 22 4a 40  67 04 32 3b 60 24 20 78  |a82;`"J@g.2;`$ x|
+000000e0  02 ae 4e f0 10 00 70 62  a9 c9 00 75 02 76 01 78  |..N...pb...u.v.x|
+000000f0  03 7a 06 7c 00 00 0a 44  09 0e 0f 1c 30 e6 1d 96  |.z.|...D....0...|
+00000100  0b 82 0a 52 11 ae 33 6e  20 3e 41 fa ff 0e 43 f8  |...R..3n >A...C.|
+00000110  0a d8 70 10 a0 2e 41 fa  ff 12 43 f8 02 e0 70 10  |..p...A...C...p.|
+00000120  a0 2e 41 fa ff 56 43 f8  09 70 21 c9 09 6c 70 10  |..A..VC..p!..lp.|
+00000130  a0 2e 30 3a ff 58 a0 6d  30 3a ff 50 a0 6c 20 47  |..0:.X.m0:.P.l G|
+00000140  31 78 02 10 00 16 a0 0f  66 54 42 a8 00 12 42 68  |1x......fTB...Bh|
+00000150  00 1c a2 07 66 40 28 68  00 5e 21 68 00 5a 00 30  |....f@(h.^!h.Z.0|
+00000160  67 10 21 7c 45 52 49 4b  00 1c 70 01 a2 60 66 26  |g.!|ERIK..p..`f&|
+00000170  a0 15 55 4f a9 95 4a 5f  6b 1a 59 4f 2f 3c 62 6f  |..UO..J_k.YO/<bo|
+00000180  6f 74 3f 3c 00 02 a9 a0  20 1f 67 12 58 4f 26 40  |ot?<.... .g.XO&@|
+00000190  20 53 4e d0 70 2b 3f 00  20 47 a0 0e 30 1f 4e 75  | SN.p+?. G..0.Nu|
+000001a0  da da da da da da da da  da da da da da da da da  |................|
+*
+typedef struct {
+  Integer	bbID;		/* boot blocks signature */                0x4c4b
+  LongInt	bbEntry;	/* entry point to boot code */             0x60000086
+  Integer	bbVersion;	/* boot blocks version number */           0x4418
+  Integer	bbPageFlags;	/* used internally */                  0x0000
+  Str15		bbSysName;	/* System filename */                      "System"
+  Str15		bbShellName;	/* Finder filename */                  "Finder"
+  Str15		bbDbg1Name;	/* debugger filename */                    "MacsBug"
+  Str15		bbDbg2Name;	/* debugger filename */                    "Disassembler"
+  Str15		bbScreenName;	/* name of startup screen */           "StartUpScreen"
+  Str15		bbHelloName;	/* name of startup program */          "Finder"
+  Str15		bbScrapName;	/* name of system scrap file */        "Clipboard"
+  Integer	bbCntFCBs;	/* number of FCBs to allocate */           0x000a
+  Integer	bbCntEvts;	/* number of event queue elements */
+  LongInt	bb128KSHeap;	/* system heap size on 128K Mac */
+  LongInt	bb256KSHeap;	/* used internally */
+  LongInt	bbSysHeapSize;	/* system heap size on all machines */
+  Integer	filler;		/* reserved */
+  LongInt	bbSysHeapExtra;	/* additional system heap space */
+  LongInt	bbSysHeapFract;	/* fraction of RAM for system heap */
+} BootBlkHdr;
+
+[x] Yoink that kilobyte from Tucson, store it here, and copy it into fresh images.
+So far so good!
+[x] Get a working System Folder in the loose FS. (by binhexxing every file?)
+ - hcopy uses MacBinary by default. Strip ".bin" suffixes like we do for ".hqx"
+ - OK that seems to work...
+ [x] Copy everything from Tucson's System Folder.
+ So far so good, ready to verify.
+[x] Copy a bunch of games from SheepShaver, in case it works :)
+
+first-attempt
+  - Pippin rejects, probably at authentication. Tried 5 times.
+  - System Folder was not blessed. Added that now.
+  - With blessed System Folder, booting SheepShaver stalls at Happy Mac. minivmac dead-macs on boot (might be PPC code?)
+  
+[ ] What is different between my image and Tucson?
+[x] Can Tucson boot SheepShaver? NO it does the same as my image
+[x] Validate PippinAuthenticationFile
+  tucson01.iso: PippinAuthenticationFile signature checks out. This should boot!
+  mydisc.img: PippinAuthenticationFile signature checks out. This should boot!
+  
+[x] Try again, now that it's blessed and I'm confident of the signature.
+  ...no dice, 5 attempts and 5 rejections
+  [ ] If this doesn't work, try a surface scan of the burned disc.
+  
+[ ] On Tucson, chunk 0 mismatches. But the disc authenticates. Is there something special about chunk zero?
+  - mydisc.img chunk zero matches fine per our scripts.
+  - Funky Funny Aliens also mismatches at zero.
+  mydisc.img: chunk 0/680 ok: fcf22648c11cd9fc8fb2d508a47752e7
+  !!! ffa/funky01.iso: chunk 0/5140 hash mismatch
+   In PAF: 7fa9e62c921bd6bea94356f9b7836bd6
+  On disk: c04c148f1e903eaf59bd53079feb58d4
+  !!! tucson01.iso: chunk 0/4047 hash mismatch
+   In PAF: 9b644ecf8d14a0f42683895cabcea21e
+  On disk: c73b97bf9ee0f85d9b25cd10f065e070
+  - The hash in FFA's PAF does not match any prefix or suffix of chunk zero.
+  - Look at Kaisershot's blog again.
+    https://blitter.net/blog/2019/05/04/exploring-the-pippin-roms-part-7-a-lot-to-digest/
+    He md5sums "first cleansed block.bin" and gets the expected Tucson hash.
+    (I already know that his Tucson disc matches mine exactly)
+    What does he mean by "cleansed"???
+    [x] Try zeroing the boot block
+      no dice
+      
+[ ] If I boot second-attempt from Kickstart, it complains about Can't Rebuild Desktop then reboots.
+
+[ ] PAF should be padded to 512 bytes -- add that to mkpaf.py
+
+I think we got it!
+https://blitter.net/blog/2019/02/17/exploring-the-pippin-roms-part-6-back-in-the-rvpr/
+Incidentally, the name, placement within the folder hierarchy, and type/creator codes of the authentication file itself are inconsequential. 
+The Pippin makes no HFS calls to locate the PippinAuthenticationFile—it could technically be buried within a nest of folders 
+or named "FoobarAuthenticationFile." The verification code does not care. Instead, it fetches the Master Directory Block—512 bytes 
+located at byte offset 1024 from the start of the boot volume. The "logical" MDB is a data structure 161 bytes in size 
+and found immediately at the start of this "physical" MDB. However, that leaves 351 bytes unaccounted for. For Pippin CD-ROMs, 
+Apple chose to set aside two 32-bit longwords at the end of the physical MDB for the purpose of locating the 
+PippinAuthenticationFile at the block level. The first of these longwords defines the offset, in 512-byte blocks from the start of the volume, 
+to the contents of the authentication file. The second of these longwords define the authentication file's size in bytes.
+
+[ ] Store proper MDB geometry for PAF
+[ ] Don't use a placeholder PAF file
+[ ] Cleanse chunks
+
+I don't see that geometry in Tucson, but i think i got it in FFA:
+000005f0  00 00 00 00 00 00 00 00  00 07 b0 93 00 01 44 00  |..............D.|
+                                   !! YES !!!! 
+                                   
+Actually, in tucson.bin, here it is:
+00000600  00 00 00 00 00 00 00 00  00 00 81 83 00 00 fe 00  |................|
+Somehow it's not there in the ".iso". But that one still boots.... the hell?
+...I've tried to mount this iso in SheepShaver, maybe SS overwrote that bit.
+...bchunk it again, get a fresh iso file, and the geometry is back.
+
+...god damn it, i ought to read before diving in...
+
+Elliot Nunn says:	
+20190217 at 953am
+
+Well, wow. Great read! Can you tell us which byte ranges of the Master Directory Block are “cleansed”?
+Reply
+
+    blitter says:	
+    20190217 at 501pm
+
+    Sure. Cleansing the MDB goes like this:
+        Set a pointer to eight bytes before the MDB starts (so, offset 1016 into the volume).
+        Copy 178 bytes from this pointer to a temporary buffer.
+        Zero out those 178 bytes.
+        From the temporary buffer, copy the following items back to their original locations:
+            offset $2 of MDB: Volume creation timestamp (4 bytes)
+            offset $C of MDB: Number of files in the root directory (2 bytes)
+            offset $E of MDB : Volume bitmap first volume block index (2 bytes)
+            offset $12 of MDB: Number of allocation blocks (2 bytes)
+            offset $1E of MDB: Next unused catalog node identifier (4 bytes)
+            offset $22 of MDB: Number of unused allocation blocks (2 bytes)
+            offset $24 of MDB: Volume name (28 bytes)
+
